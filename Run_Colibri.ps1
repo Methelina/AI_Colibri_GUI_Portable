@@ -1,4 +1,5 @@
 # colibri v1.1.0 - GLM-5.2 MoE Control Panel Launcher
+# Author:  Soror L.'. L.'.
 # Default: launches DearPyGui control panel.
 #
 # USAGE:

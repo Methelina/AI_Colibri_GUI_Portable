@@ -1,6 +1,9 @@
 """
 colibri control module — start/stop/monitor for colibri.exe + coli.
 Imported by colibri_gui.py; also usable as CLI: python colibri_ctl.py serve|stop|health|run
+
+Version: 1.0.0
+Author:  Soror L.'. L.'.
 """
 
 import os, re, socket, subprocess, sys, time

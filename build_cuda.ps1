@@ -1,4 +1,5 @@
 # build_cuda.ps1 — colibri CUDA build for RTX 3060 (sm_86)
+# Author:  Soror L.'. L.'.
 # Direct nvcc + gcc, no Makefile needed
 
 $ErrorActionPreference = "Stop"

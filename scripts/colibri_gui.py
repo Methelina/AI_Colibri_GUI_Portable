@@ -1,7 +1,10 @@
 """
 colibri GUI — DearPyGui control panel for the colibri engine.
 Start/stop serve, launch chat, run one-shot, monitor GPU/RAM.
-Based on KimoDer pattern by Soror L.'. L.'.
+
+Version: 1.0.0
+Author:  Soror L.'. L.'.
+Based on KimoDer control panel pattern.
 """
 
 import json, os, queue, re, subprocess, sys, textwrap, threading, time, webbrowser

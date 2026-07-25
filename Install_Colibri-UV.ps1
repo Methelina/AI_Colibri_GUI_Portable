@@ -1,5 +1,6 @@
 # ==========================================================
 # colibri Portable Installer (v1.0.0)
+# Author:  Soror L.'. L.'.
 # ==========================================================
 # Creates an isolated Python 3.12 venv with UV for the
 # colibri DearPyGui control panel.
