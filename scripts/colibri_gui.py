@@ -200,6 +200,7 @@ def tail_log(log_path_fn, tag):
 def monitor():
     while not _sd.is_set():
         apply_ui()
+        _refresh_dl_ui()
         _sd.wait(1.0)
 
 
@@ -310,18 +311,49 @@ def act_log_folder():
     except: pass
 
 
-def act_download_model():
+def act_dl_button():
+    """Smart button: Set Folder → then becomes Download if folder empty."""
     dest = dpg.get_value("dl_folder_input").strip()
     if not dest:
-        ct("GUI", "! Enter a target folder for the model")
+        ct("GUI", "! Enter a folder path first")
         return
+    p = Path(dest)
+    if not p.is_dir():
+        try: p.mkdir(parents=True, exist_ok=True)
+        except: ct("GUI", "! Cannot create folder"); return
+
+    if cc.is_model_dir(dest):
+        # Folder has model files — use it
+        os.environ["COLI_MODEL"] = dest
+        os.environ["SNAP"] = dest
+        ct("GUI", f"+ Model folder set: {dest}")
+        return
+
+    # Folder exists but no model — download
+    ct("GUI", f">>> Downloading model to {dest} (~{cc.MODEL_SIZE_GB} GB, resumable)...")
     def w():
-        ct("GUI", f">>> Downloading model to {dest} (~{cc.MODEL_SIZE_GB} GB, resumable)...")
         cc.start_model_download(dest, status_cb=lambda m: ct("GUI", f"DL: {m}"))
-        # Refresh model path after download
-        if dpg.does_item_exist(MC):
-            dpg.set_value(MC, cc.find_model_path() or dest)
+        os.environ["COLI_MODEL"] = dest
+        os.environ["SNAP"] = dest
     threading.Thread(target=w, daemon=True).start()
+
+
+def _refresh_dl_ui():
+    """Called by monitor thread: update download button label based on folder state."""
+    if not dpg.does_item_exist("dl_folder_input"): return
+    folder = dpg.get_value("dl_folder_input").strip()
+    has_model = bool(cc.find_model_path())
+
+    if dpg.does_item_exist("dl_section"):
+        dpg.configure_item("dl_section", show=not has_model)
+
+    if not has_model and dpg.does_item_exist("dl_btn"):
+        if cc.is_model_dir(folder):
+            dpg.set_item_label("dl_btn", "Use This Folder")
+        elif folder and Path(folder).is_dir():
+            dpg.set_item_label("dl_btn", "Download Model")
+        else:
+            dpg.set_item_label("dl_btn", "Set Folder")
 
 
 def act_preset_save():
@@ -457,7 +489,7 @@ def build_gui():
 
         # ── Model download (visible only when model not found) ──
         with dpg.group(tag="dl_section", show=False):
-            dpg.add_text("Model not found — download required", tag="dl_title", color=(255, 160, 60))
+            dpg.add_text("Model path not set", tag="dl_title", color=(255, 160, 60))
             repo_alive = cc.check_repo_alive()
             repo_status = "HF repo reachable" if repo_alive else "HF repo UNREACHABLE (check internet)"
             repo_color = (80, 210, 100) if repo_alive else (230, 70, 70)
@@ -468,11 +500,11 @@ def build_gui():
                          color=(140, 145, 155), indent=4)
             with dpg.group(horizontal=True):
                 dpg.add_input_text(tag="dl_folder_input", width=-120,
-                                   default_value=cc.default_model_dir(), hint="target folder")
-                dpg.add_button(label="Download Model", callback=act_download_model)
-            with dpg.tooltip(dpg.last_item()):
-                dpg.add_text("Start resumable download via pycurl + HF API")
-                dpg.add_text("Safe to interrupt — re-run to continue from where it stopped")
+                                   default_value=cc.default_model_dir(), hint="model folder path")
+                dpg.add_button(label="Set Folder", tag="dl_btn", callback=act_dl_button)
+            with dpg.tooltip("dl_btn"):
+                dpg.add_text("Set folder = save path, then download if empty")
+                dpg.add_text("Download = start resumable HF download (~370 GB)")
             dpg.add_spacer(height=4)
 
         with dpg.group(indent=24):

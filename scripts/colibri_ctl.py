@@ -80,7 +80,12 @@ def find_model_path() -> str:
     return ""
 
 
-MODEL_REPO = "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
+def is_model_dir(path: str) -> bool:
+    p = Path(path)
+    if not p.is_dir(): return False
+    has_safetensors = any(p.rglob("*.safetensors"))
+    has_config = (p / "config.json").is_file()
+    return has_safetensors or has_config
 MODEL_SIZE_GB = 370
 
 
