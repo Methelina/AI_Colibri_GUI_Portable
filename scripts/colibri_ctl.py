@@ -77,9 +77,9 @@ def find_coli() -> Path | None:
 def find_model_path() -> str:
     env = os.environ.get("COLI_MODEL") or os.environ.get("SNAP") or ""
     if env and Path(env).is_dir(): return env
-    for guess in (r"K:\work\AI\local_AI_Models\GLM_52",
-                  r"D:\glm52_i4",
-                  r"E:\glm52_i4"):
+    for guess in (r"D:\glm52_i4",
+                  r"E:\glm52_i4",
+                  str(repo_root() / "glm52_i4")):
         if Path(guess).is_dir(): return guess
     return ""
 
@@ -96,13 +96,11 @@ def find_downloader() -> Path | None:
 
 
 def default_model_dir() -> str:
-    guesses = [r"K:\work\AI\local_AI_Models\GLM_52",
-               r"D:\glm52_i4",
-               r"E:\glm52_i4"]
-    for g in guesses:
+    for g in (r"D:\glm52_i4",
+              r"E:\glm52_i4",
+              str(repo_root() / "glm52_i4")):
         if Path(g).is_dir(): return g
-    # Return first guess as suggested default even if doesn't exist yet
-    return guesses[0]
+    return r"D:\glm52_i4"
 
 
 def check_repo_alive(repo: str = MODEL_REPO) -> bool:
@@ -335,14 +333,13 @@ WEB_DEFAULT_PORT = 8393
 
 
 def find_npx() -> str | None:
-    for p in (r"C:\Program Files\nodejs\npx.cmd",
-              r"C:\Program Files\nodejs\npx",
-              r"C:\Program Files (x86)\nodejs\npx.cmd"):
-        if Path(p).is_file(): return p
-    # fallback: check PATH
     import shutil
     found = shutil.which("npx.cmd") or shutil.which("npx")
-    return found
+    if found: return found
+    for p in (r"C:\Program Files\nodejs\npx.cmd",
+              r"C:\Program Files (x86)\nodejs\npx.cmd"):
+        if Path(p).is_file(): return p
+    return None
 
 
 def web_status() -> tuple:

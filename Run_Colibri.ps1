@@ -115,9 +115,9 @@ if (-not (Test-Path $GuiScript)) {
 $modelPath = $env:COLI_MODEL
 if (-not $modelPath) {
     $guesses = @(
-        "K:\work\AI\local_AI_Models\GLM_52",
         "D:\glm52_i4",
-        "E:\glm52_i4"
+        "E:\glm52_i4",
+        (Join-Path $ScriptPath "glm52_i4")
     )
     foreach ($g in $guesses) {
         if (Test-Path $g) {

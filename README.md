@@ -65,12 +65,9 @@ Then enable **CUDA GPU** and **CUDA Dense** toggles in the GUI.
 
 ## Model
 
-The recommended model is [GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). The GUI includes a downloader — or use the standalone script:
+The recommended model is [GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB).
 
-```powershell
-cd K:\work\AI\local_AI_Models\GLM_52
-.\launcher_downloader.ps1
-```
+The GUI includes a built-in downloader (resumable, via pycurl). If the model is not found on startup, a download section appears automatically with folder selection and progress in the log.
 
 ## Project layout
 
