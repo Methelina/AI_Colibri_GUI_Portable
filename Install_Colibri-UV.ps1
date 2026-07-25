@@ -27,26 +27,24 @@ Set-Location $ScriptPath
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "colibri Portable Installer"
 
-# ==========================================================
+# ==============================================================
 # ASCII Art
-# ==========================================================
-Write-Host " ===========================================" -ForegroundColor Green
+# ==============================================================
+Write-Host " ===========================================	" -ForegroundColor Green
 Write-Host ""
-Write-Host "  ██▓        ██▓    ██▓        ██▓           " -ForegroundColor Yellow
-Write-Host " ▓██▒              ▓██▒                      " -ForegroundColor Yellow
-Write-Host " ▒██░              ▒██░                      " -ForegroundColor Yellow
-Write-Host " ▒██░              ▒██░                      " -ForegroundColor Yellow
-Write-Host " ░██████▒ ██▓  ██▓ ░██████▒ ██▓  ██▓       " -ForegroundColor Yellow
-Write-Host " ░ ▒░▓  ░ ▒▓▒  ▒▓▒ ░ ▒░▓  ░ ▒▓▒  ▒▓▒       " -ForegroundColor Yellow
-Write-Host " ░ ░ ▒  ░ ░▒   ░▒  ░ ░ ▒  ░ ░▒   ░▒        " -ForegroundColor Yellow
-Write-Host "   ░ ░    ░    ░     ░ ░    ░    ░          " -ForegroundColor Yellow
-Write-Host "     ░  ░  ░    ░      ░  ░  ░    ░        " -ForegroundColor Yellow
+Write-Host "  ██▓        ██▓    ██▓        ██▓				" -ForegroundColor Yellow
+Write-Host " ▓██▒              ▓██▒							" -ForegroundColor Yellow
+Write-Host " ▒██░              ▒██░							" -ForegroundColor Yellow
+Write-Host " ▒██░              ▒██░							" -ForegroundColor Yellow
+Write-Host " ░██████▒ ██▓  ██▓ ░██████▒ ██▓  ██▓			" -ForegroundColor Yellow
+Write-Host " ░ ▒░▓  ░ ▒▓▒  ▒▓▒ ░ ▒░▓  ░ ▒▓▒  ▒▓▒			" -ForegroundColor Yellow
+Write-Host " ░ ░ ▒  ░ ░▒   ░▒  ░ ░ ▒  ░ ░▒   ░▒				" -ForegroundColor Yellow
+Write-Host "   ░ ░    ░    ░     ░ ░    ░    ░				" -ForegroundColor Yellow
+Write-Host "     ░  ░  ░    ░      ░  ░  ░    ░				" -ForegroundColor Yellow
 Write-Host ""
-Write-Host " ===========================================" -ForegroundColor Green
+Write-Host "  ===========================================	" -ForegroundColor Green
 Write-Host "   colibri GLM-5.2 MoE Streaming Engine" -ForegroundColor Green
-Write-Host "   GUI Control Panel - Portable Installer" -ForegroundColor Cyan
-Write-Host " ===========================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "   GUI Portable Installer" -ForegroundColor Cyan
 
 # ==========================================================
 # PORTABILITY ISOLATION
@@ -259,10 +257,20 @@ function Install-Colibri {
 # ==========================================================
 function Show-Menu {
     Clear-Host
-    Write-Host " ===========================================" -ForegroundColor Cyan
+    Write-Host " ===========================================	" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  ██▓        ██▓    ██▓        ██▓				" -ForegroundColor Yellow
+    Write-Host " ▓██▒              ▓██▒							" -ForegroundColor Yellow
+    Write-Host " ▒██░              ▒██░							" -ForegroundColor Yellow
+    Write-Host " ▒██░              ▒██░							" -ForegroundColor Yellow
+    Write-Host " ░██████▒ ██▓  ██▓ ░██████▒ ██▓  ██▓			" -ForegroundColor Yellow
+    Write-Host " ░ ▒░▓  ░ ▒▓▒  ▒▓▒ ░ ▒░▓  ░ ▒▓▒  ▒▓▒			" -ForegroundColor Yellow
+    Write-Host " ░ ░ ▒  ░ ░▒   ░▒  ░ ░ ▒  ░ ░▒   ░▒				" -ForegroundColor Yellow
+    Write-Host "   ░ ░    ░    ░     ░ ░    ░    ░				" -ForegroundColor Yellow
+    Write-Host "     ░  ░  ░    ░      ░  ░  ░    ░				" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  ===========================================	" -ForegroundColor Green
     Write-Host "   colibri Portable Installer" -ForegroundColor Green
-    Write-Host "   Python 3.12 + DearPyGui" -ForegroundColor Cyan
-    Write-Host " ===========================================" -ForegroundColor Cyan
     Write-Host ""
     $installed = Test-IsInstalled
     if ($installed) {
