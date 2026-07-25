@@ -1,0 +1,59 @@
+# colibri Portable — build artifacts
+colibri.exe
+coli_cuda.dll
+*.o
+backend_loader.o
+.build-config
+
+# colibri release files (downloaded by installer)
+coli
+doctor.py
+openai_server.py
+resource_plan.py
+version.py
+
+# Original colibri source (reference only; installer downloads release)
+src/
+
+# Python virtual environment (recreated by installer)
+colibri_env/
+
+# uv binaries (downloaded by installer)
+bin/uv.exe
+bin/uvx.exe
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Cache directories (uv, pip, huggingface)
+.cache/
+
+# User data
+colibri_presets.json
+colibri-runtime/
+*.part
+
+# Downloaded archives
+*.zip
+!_pycurl_download*.zip
+
+# Temporary build directories
+_*_tmp/
+uv_tmp/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+warmup.log
