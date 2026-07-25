@@ -1,56 +1,94 @@
 # colibri Portable — Windows GUI Edition
 
-**Tiny engine, immense model.** Run GLM-5.2 (744B-parameter Mixture-of-Experts) on consumer hardware — in pure C, streaming experts from disk.
+> **Tiny engine, immense model.** Run GLM-5.2 (744B-parameter MoE) on consumer hardware — in pure C, streaming experts from disk.
 
-This is a portable, GUI-enhanced distribution of the original [colibri](https://github.com/JustVugg/colibri) project by [JustVugg](https://github.com/JustVugg). All credit for the engine and model pipeline belongs to the original authors.
+A portable GUI-enhanced distribution of [colibri](https://github.com/JustVugg/colibri) by [JustVugg](https://github.com/JustVugg). GUI author: **Soror L.'. L.'.** · [Project on GitHub](https://github.com/Methelina/AI_Colibri_GUI_Portable)
+
+[Русская версия](README.ru.md)
 
 ---
 
-## What we added
+![GUI window](bin/res/Pintura_001.png)
 
-| Feature | Description |
-|---------|-------------|
-| **DearPyGui control panel** | Start/stop server, launch chat, run prompts, monitor GPU/RAM — all from a graphical interface |
-| **One-click installer** | `Install_Colibri-UV.ps1` sets up everything: downloads engine, creates isolated Python 3.12 environment, installs Web UI dependencies |
-| **CUDA build script** | `build_cuda.ps1` rebuilds the engine with NVIDIA GPU support (RTX 3060 tested) |
-| **Model downloader** | Built-in pycurl-based HF downloader with resume support (~370 GB model) |
-| **Web chat interface** | React/Vite dashboard connecting to the local API server |
-| **Environmental presets** | Save/load full configurations (CUDA flags, generation params, I/O tuning) |
-| **ModeSeven fonts** | Bitmap terminal aesthetic with Cyrillic support |
+---
 
 ## Quick Start
 
+### 1. Install
+
 ```powershell
-# 1. Install the portable environment
 .\Install_Colibri-UV.ps1
+```
 
-# 2. Launch the GUI
+Downloads the engine, Python 3.12, and all dependencies into an isolated environment.
+
+For NVIDIA GPU support:
+
+```powershell
+.\build_cuda.ps1
+```
+
+### 2. Launch
+
+```powershell
 .\Run_Colibri.ps1
-
-# 3. Use the GUI to:
-#    - Download the model (if not already present)
-#    - Start the API server on port 8000
-#    - Open web chat at http://127.0.0.1:8393
 ```
 
-### CLI shortcuts (no GUI)
+### 3. Model
 
-```powershell
-.\Run_Colibri.ps1 -Serve          # Start API server
-.\Run_Colibri.ps1 -StopServe      # Stop API server
-.\Run_Colibri.ps1 -Doctor         # Health check
-.\Run_Colibri.ps1 -Plan           # Resource plan
+1. Enter or browse (**+** button) to the model folder
+2. Click **Set**
+3. If empty — click **Download Model (~370 GB)** (resumable)
+4. Green circle = model found
+
+### 4. Run
+
+1. Set toggles (see recommendations below)
+2. **Start Serve** → API on port 8000
+3. **Start Web UI** → web chat on port 8393
+4. In the web UI, press **Probe server**
+
+Or click **Chat** for a console chat window.
+
+---
+
+## Toggle Guide
+
+| Toggle | Recommendation | Description |
+|--------|---------------|-------------|
+| **CUDA GPU** | ☑ ON with NVIDIA GPU | Enable GPU backend (needs `build_cuda.ps1`) |
+| **CUDA Dense** | ☑ ON with CUDA GPU | Dense matmuls on GPU (~10 GB VRAM) |
+| **CUDA MTP** | ☐ OFF | MTP under CUDA: fp-divergence kills acceptance |
+| **Think block** | ☐ OFF normally | GLM-5.2 reasoning `<think>` block |
+| **MTP** | ☑ ON | Multi-Token Prediction: ~2-3x faster on CPU |
+| **Pipe I/O** | ☑ ON | Async expert I/O: disk parallel with compute |
+| **O_DIRECT** | ☑ ON for NVMe, ☐ OFF for SATA/HDD | Direct disk I/O (+34-65% speedup) |
+| **Debug** | ☐ OFF | Raw engine stderr output |
+| **KV Save** | ☑ ON | Persist chat context across restarts |
+| **Profile** | ☑ ON for benchmarks | Latency percentiles and bottleneck analysis |
+
+### Presets
+
+Three typical configs:
+
+**CPU-only:**
+```
+MTP ☑  Pipe I/O ☑  O_DIRECT ☑  KV Save ☑  — rest OFF
 ```
 
-### GPU (CUDA) support
-
-The installer downloads a **CPU-only** binary. For NVIDIA GPU acceleration:
-
-```powershell
-.\build_cuda.ps1                  # Rebuild with sm_86 (RTX 3060)
+**NVIDIA GPU (12 GB VRAM):**
+```
+CUDA GPU ☑  CUDA Dense ☑  MTP ☑  Pipe I/O ☑  O_DIRECT ☑  KV Save ☑
+CUDA MTP ☐
 ```
 
-Then enable **CUDA GPU** and **CUDA Dense** toggles in the GUI.
+**NVIDIA GPU (24+ GB VRAM):**
+```
+CUDA GPU ☑  CUDA Dense ☑  MTP ☑  Pipe I/O ☑  O_DIRECT ☑  KV Save ☑
+Plus: set CUDA_EXPERT_GB=8 and COLI_CUDA_TC_W4A16=1
+```
+
+---
 
 ## Requirements
 
@@ -58,38 +96,19 @@ Then enable **CUDA GPU** and **CUDA Dense** toggles in the GUI.
 |-----------|---------|-------------|
 | OS | Windows 10/11 | Windows 11 24H2 |
 | RAM | 16 GB | 48 GB+ |
-| Free disk | ~400 GB NVMe SSD | Two NVMe SSDs (model mirror) |
+| Free disk | ~400 GB | NVMe SSD |
 | GPU | None required | NVIDIA RTX 3060+ 12 GB VRAM |
-| Python | 3.12 (auto-installed) | — |
-| Node.js | For Web UI | 18+ |
 
 ## Model
 
-The recommended model is [GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB).
-
-The GUI includes a built-in downloader (resumable, via pycurl). If the model is not found on startup, a download section appears automatically with folder selection and progress in the log.
-
-## Project layout
-
-```
-colibri.exe                # C engine (pre-built or CUDA-rebuilt)
-coli                       # Python CLI launcher
-colibri_env/               # Isolated Python 3.12 (auto-created)
-scripts/
-├── colibri_gui.py         # DearPyGui control panel
-├── colibri_ctl.py         # Process management module
-└── _hf_pycurl_download.py # HF model downloader
-bin/res/                   # Fonts, resources
-src/colibri/               # Original colibri source (reference)
-```
+[GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). Built-in resumable downloader in the GUI.
 
 ## Links
 
 - **Original project**: [github.com/JustVugg/colibri](https://github.com/JustVugg/colibri)
-- **Website**: [justvugg.github.io/colibri](https://justvugg.github.io/colibri)
-- **Releases**: [github.com/JustVugg/colibri/releases](https://github.com/JustVugg/colibri/releases)
+- **Our portable GUI**: [github.com/Methelina/AI_Colibri_GUI_Portable](https://github.com/Methelina/AI_Colibri_GUI_Portable)
 - **Model**: [huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp)
 
 ## License
 
-The original colibri engine is licensed under MIT — see [LICENSE](LICENSE) and the [original repository](https://github.com/JustVugg/colibri). The GUI wrapper and portable installer scripts follow the same license.
+Original colibri engine — MIT, see [LICENSE](LICENSE). GUI wrapper and installer — same license.
