@@ -14,6 +14,7 @@ version.py
 
 # Original colibri source (reference only; installer downloads release)
 src/
+!src/colibri/web/
 
 # Python virtual environment (recreated by installer)
 colibri_env/
