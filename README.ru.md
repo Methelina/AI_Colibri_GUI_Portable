@@ -190,7 +190,7 @@ CUDA GPU ☑  CUDA Dense ☑  MTP ☑  Pipe I/O ☑  O_DIRECT ☑  KV Save ☑
 
 Рекомендованная модель: [GLM-5.2 int4 + int8 MTP](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). В GUI встроен загрузчик с докачкой через pycurl.
 
----
+**Движок model-agnostic** — технология tiering/staging работает с любыми MoE-моделями. Сегодня поддерживаются GLM-5.2 и OLMoE, на подходе Kimi K2, Qwen3 MoE, MiniMax.
 
 ## Структура проекта
 
@@ -215,4 +215,4 @@ src/colibri/               # Оригинальные исходники (refere
 
 ## Лицензия
 
-Оригинальный движок colibri — MIT, см. [LICENSE](LICENSE). GUI-обвязка и инсталлятор — та же лицензия.
+Оригинальный движок colibri — Apache 2.0, см. [LICENSE](LICENSE). Веса модели GLM-5.2 — MIT от Z.ai. GUI-обвязка и инсталлятор — та же лицензия Apache 2.0.

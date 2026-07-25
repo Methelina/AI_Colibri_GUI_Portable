@@ -115,6 +115,8 @@ Plus: set CUDA_EXPERT_GB=8 and COLI_CUDA_TC_W4A16=1
 
 [GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). Built-in resumable downloader in the GUI.
 
+**Model-agnostic engine** — the tiering/staging algorithm works with any MoE model. GLM-5.2 and OLMoE supported today; Kimi K2, Qwen3 MoE, MiniMax on the roadmap.
+
 ## Links
 
 - **Original project**: [github.com/JustVugg/colibri](https://github.com/JustVugg/colibri)
@@ -123,4 +125,4 @@ Plus: set CUDA_EXPERT_GB=8 and COLI_CUDA_TC_W4A16=1
 
 ## License
 
-Original colibri engine — MIT, see [LICENSE](LICENSE). GUI wrapper and installer — same license.
+Original colibri engine — Apache 2.0, see [LICENSE](LICENSE). GLM-5.2 weights — MIT (Z.ai). GUI wrapper and installer — Apache 2.0.
