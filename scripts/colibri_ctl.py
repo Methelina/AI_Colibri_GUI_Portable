@@ -87,6 +87,21 @@ def is_model_dir(path: str) -> bool:
     has_config = (p / "config.json").is_file()
     return has_safetensors or has_config
 
+
+def build_env(model_path: str = "") -> dict:
+    env = dict(os.environ)
+    env["PYTHONUNBUFFERED"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    root = repo_root()
+    cache = root / ".cache"
+    env["HF_HOME"] = str(cache / "huggingface")
+    env["PIP_CACHE_DIR"] = str(cache / "pip")
+    if model_path:
+        env["COLI_MODEL"] = str(model_path)
+        env["SNAP"] = str(model_path)
+    return env
+
+
 MODEL_REPO = "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
 MODEL_SIZE_GB = 370
 
