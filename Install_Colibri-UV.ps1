@@ -197,7 +197,26 @@ function Install-Colibri {
     Write-Status "Installing pycurl..." "INFO"
     Invoke-UvPipInstall "pycurl certifi"
 
-    # ---- 5. Web UI (npm install) ----
+    # ---- 5. Clone colibri source (for Web UI, source reference) ----
+    $SrcDir = Join-Path $ScriptPath "src\colibri"
+    if (-not (Test-Path (Join-Path $SrcDir ".git"))) {
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            if (Test-Path $SrcDir) { Remove-Item -Recurse -Force $SrcDir }
+            Write-Status "Cloning colibri source from GitHub..." "INFO"
+            git clone --depth 1 https://github.com/JustVugg/colibri.git $SrcDir 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Status "Source cloned." "SUCCESS"
+            } else {
+                Write-Status "Git clone failed — Web UI will be unavailable." "WARN"
+            }
+        } else {
+            Write-Status "Git not found — source skipped." "WARN"
+        }
+    } else {
+        Write-Status "Source already cloned." "SUCCESS"
+    }
+
+    # ---- 6. Web UI (npm install) ----
     $WebDir = Join-Path $ScriptPath "src\colibri\web"
     if (Test-Path (Join-Path $WebDir "package.json")) {
         if (Get-Command node -ErrorAction SilentlyContinue) {

@@ -76,7 +76,7 @@ def find_coli() -> Path | None:
 
 def find_model_path() -> str:
     env = os.environ.get("COLI_MODEL") or os.environ.get("SNAP") or ""
-    if env and Path(env).is_dir(): return env
+    if env and Path(env).is_dir(): return os.path.normpath(env)
     return ""
 
 
@@ -243,13 +243,21 @@ def pid_alive(pid: int) -> bool:
     except OSError: return False
 
 
+_serve_ready_cache = {"time": 0, "port": 0, "ready": False}
+
+
 def serve_status() -> tuple:
     """(running, pid, port)"""
     pf = pid_path()
-    if not pf.exists(): return False, 0, 0
+    if not pf.exists():
+        _serve_ready_cache["ready"] = False
+        return False, 0, 0
     try: pid = int(pf.read_text().strip() or "0")
     except: return False, 0, 0
-    if not pid_alive(pid): pf.unlink(missing_ok=True); return False, 0, 0
+    if not pid_alive(pid):
+        pf.unlink(missing_ok=True)
+        _serve_ready_cache["ready"] = False
+        return False, 0, 0
     port = DEFAULT_SERVE_PORT
     try:
         txt = log_path().read_text(encoding="utf-8", errors="replace")
@@ -257,6 +265,27 @@ def serve_status() -> tuple:
         if m: port = int(m.group(1))
     except: pass
     return True, pid, port
+
+
+def serve_api_ready(port: int = DEFAULT_SERVE_PORT) -> bool:
+    global _serve_ready_cache
+    now = time.time()
+    if port == _serve_ready_cache["port"]:
+        if _serve_ready_cache["ready"] and now - _serve_ready_cache["time"] < 10:
+            return True
+        if not _serve_ready_cache["ready"] and now - _serve_ready_cache["time"] < 5:
+            return False
+    try:
+        import urllib.request, json
+        req = urllib.request.Request(f"http://{HOST}:{port}/v1/models",
+                                     headers={"Connection": "close"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read())
+            ready = resp.status == 200 and isinstance(data, dict)
+    except Exception:
+        ready = False
+    _serve_ready_cache = {"time": now, "port": port, "ready": ready}
+    return ready
 
 
 def start_serve(model_path: str = "", port: int = DEFAULT_SERVE_PORT,
@@ -343,7 +372,7 @@ def web_port_path() -> Path:
     return runtime_dir() / "colibri-web.port"
 
 
-WEB_DEFAULT_PORT = 8393
+WEB_DEFAULT_PORT = 5173
 
 
 def find_npx() -> str | None:

@@ -55,6 +55,23 @@ echo Installing psutil pycurl...
 
 call :download_engine
 
+set "SRC_DIR=%~dp0src\colibri"
+if not exist "%SRC_DIR%\.git" (
+    where git >nul 2>&1
+    if not errorlevel 1 (
+        echo Cloning colibri source from GitHub...
+        if exist "%SRC_DIR%" rmdir /s /q "%SRC_DIR%" >nul 2>&1
+        git clone --depth 1 https://github.com/JustVugg/colibri.git "%SRC_DIR%" >nul 2>&1
+        if not errorlevel 1 (
+            echo Source cloned.
+        ) else (
+            echo Git clone failed. Web UI will be unavailable.
+        )
+    ) else (
+        echo Git not found. Source skipped.
+    )
+)
+
 set "WEB_DIR=%~dp0src\colibri\web"
 if not exist "%WEB_DIR%\package.json" goto :skip_web
 where node >nul 2>&1

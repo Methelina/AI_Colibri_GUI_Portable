@@ -98,8 +98,10 @@ def _engine_state():
 
 def _serve_state():
     running, pid, port = cc.serve_status()
+    if running and cc.serve_api_ready(port):
+        return (80, 210, 100), "READY", f"port :{port}  pid {pid}"
     if running:
-        return (80, 210, 100), "RUNNING", f"port :{port}  pid {pid}"
+        return (240, 200, 60), "WARMING", f"port :{port}  pid {pid}"
     return (110, 110, 110), "STOPPED", ""
 
 
@@ -121,21 +123,29 @@ def apply_ui():
         dpg.set_value(ET, ed)
 
     sc, sl, sd = _serve_state()
+    serve_running = (sl != "STOPPED")
     if dpg.does_item_exist(SSC):
+        prev_sl = dpg.get_value(SST) if dpg.does_item_exist(SST) else ""
+        if sl != prev_sl:
+            ct("GUI", f"API Server: {prev_sl} -> {sl}")
         dpg.configure_item(SSC, fill=sc)
         dpg.set_value(SST, sl); dpg.configure_item(SST, color=sc)
         dpg.set_value(SPT, sd)
-        dpg.configure_item("btn_stop_serve", enabled=(sl == "RUNNING"))
-        dpg.configure_item("btn_start_serve", enabled=(sl != "RUNNING"))
-        dpg.configure_item("btn_open_serve", enabled=(sl == "RUNNING"))
+        dpg.configure_item("btn_stop_serve", enabled=serve_running)
+        dpg.configure_item("btn_start_serve", enabled=not serve_running)
+        dpg.configure_item("btn_open_serve", enabled=(sl == "READY"))
 
     wc, wl, wd = _web_state()
     if dpg.does_item_exist(WSC):
+        prev_wl = dpg.get_value(WST) if dpg.does_item_exist(WST) else ""
+        if wl != prev_wl:
+            ct("GUI", f"Web UI: {prev_wl} -> {wl}")
         dpg.configure_item(WSC, fill=wc)
         dpg.set_value(WST, wl); dpg.configure_item(WST, color=wc)
         dpg.set_value(WPT, wd)
         dpg.configure_item("btn_stop_web", enabled=(wl == "RUNNING"))
-        dpg.configure_item("btn_start_web", enabled=(wl != "RUNNING"))
+        serve_ready = (sl == "READY")
+        dpg.configure_item("btn_start_web", enabled=serve_ready)
         dpg.configure_item("btn_open_web", enabled=(wl == "RUNNING"))
 
     if dpg.does_item_exist(VT): dpg.set_value(VT, cc.vram_snapshot())
@@ -235,10 +245,7 @@ def act_serve_open():
 
 
 def act_web_start():
-    port_text = dpg.get_value("web_port_input").strip()
-    try: port = int(port_text)
-    except: port = 8393
-
+    port = 5173
     def w():
         ct("GUI", f">>> starting Web UI on :{port} ...")
         cc.start_web(port=port, status_cb=lambda m: ct("GUI", f"WEB: {m}"))
@@ -328,9 +335,10 @@ def act_set_folder():
         try: p.mkdir(parents=True, exist_ok=True)
         except: ct("GUI", "! Cannot create folder"); return
 
-    os.environ["COLI_MODEL"] = dest
-    os.environ["SNAP"] = dest
-    ct("GUI", f"+ Model folder set: {dest}")
+    dest_norm = str(p.resolve())
+    os.environ["COLI_MODEL"] = dest_norm
+    os.environ["SNAP"] = dest_norm
+    ct("GUI", f"+ Model folder set: {dest_norm}")
 
     # Auto-save to presets for next launch
     _presets["_last"] = {"COLI_MODEL": dest, "SNAP": dest}
@@ -609,17 +617,15 @@ def build_gui():
             dpg.add_text("STOPPED", tag=WST, color=(110, 110, 110))
         dpg.add_spacer(height=2)
         with dpg.group(indent=24):
-            with dpg.group(horizontal=True):
-                dpg.add_input_text(tag="web_port_input", width=60, default_value="8393", hint="port")
-                dpg.add_button(label="Start Web UI", tag="btn_start_web", callback=act_web_start)
+            dpg.add_text("127.0.0.1:5173", color=(140, 145, 155))
+            dpg.add_button(label="Start Web UI", tag="btn_start_web", callback=act_web_start)
             with dpg.tooltip("btn_start_web"):
-                dpg.add_text("Start React/Vite web chat interface")
-                dpg.add_text("Uses the port shown in the field (default 8393)")
+                dpg.add_text("Start React/Vite web chat interface on port 5173")
+                dpg.add_text("Requires API Server to be running first")
             dpg.add_button(label="Open Web UI", tag="btn_open_web", enabled=False, callback=act_web_open)
             dpg.bind_item_theme("btn_open_web", "serve_dim")
             with dpg.tooltip("btn_open_web"):
                 dpg.add_text("Open web chat in browser")
-                dpg.add_text("Press Probe server in the UI to connect to :8000 API")
             dpg.add_button(label="Stop Web UI", tag="btn_stop_web", enabled=False, callback=act_web_stop)
             with dpg.tooltip("btn_stop_web"):
                 dpg.add_text("Stop the web chat interface")

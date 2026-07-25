@@ -54,7 +54,7 @@ The script **auto-detects** CUDA (PATH, CUDA_PATH, Program Files), MinGW gcc (PA
 
 1. Set toggles (see recommendations below)
 2. **Start Serve** → API on port 8000
-3. **Start Web UI** → web chat on port 8393
+3. **Start Web UI** → web chat on port 5173
 4. In the web UI, press **Probe server**
 
 Or click **Chat** for a console chat window.
