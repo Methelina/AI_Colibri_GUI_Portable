@@ -334,6 +334,17 @@ def web_port_path() -> Path:
 WEB_DEFAULT_PORT = 8393
 
 
+def find_npx() -> str | None:
+    for p in (r"C:\Program Files\nodejs\npx.cmd",
+              r"C:\Program Files\nodejs\npx",
+              r"C:\Program Files (x86)\nodejs\npx.cmd"):
+        if Path(p).is_file(): return p
+    # fallback: check PATH
+    import shutil
+    found = shutil.which("npx.cmd") or shutil.which("npx")
+    return found
+
+
 def web_status() -> tuple:
     pf = web_pid_path()
     if not pf.exists(): return False, 0, 0
@@ -363,11 +374,19 @@ def start_web(port: int = WEB_DEFAULT_PORT, status_cb=None) -> tuple:
         emit("Web UI deps not installed — run: cd src/colibri/web && npm install")
         return 0, 0
 
+    npx = find_npx()
+    if not npx:
+        emit("npx/npm not found — install Node.js")
+        return 0, 0
+
+    env = dict(os.environ)
+    env["PATH"] = r"C:\Program Files\nodejs;" + env.get("PATH", "")
+
     log_file = open(runtime_dir() / "colibri-web.log", "w", encoding="utf-8", errors="replace")
     proc = subprocess.Popen(
-        ["npx", "vite", "--host", "127.0.0.1", "--port", str(port)],
+        [npx, "vite", "--host", "127.0.0.1", "--port", str(port)],
         cwd=str(web_dir), stdout=log_file, stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL, creationflags=detached_flags(), close_fds=True)
+        stdin=subprocess.DEVNULL, env=env, creationflags=detached_flags(), close_fds=True)
 
     web_pid_path().write_text(str(proc.pid))
     web_port_path().write_text(str(port))
