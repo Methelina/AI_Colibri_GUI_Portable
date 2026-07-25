@@ -111,9 +111,24 @@ Plus: set CUDA_EXPERT_GB=8 and COLI_CUDA_TC_W4A16=1
 | Free disk | ~400 GB | NVMe SSD |
 | GPU | None required | NVIDIA RTX 3060+ 12 GB VRAM |
 
-## Model
+## Models
 
-[GLM-5.2 int4 with int8 MTP heads](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). Built-in resumable downloader in the GUI.
+The GUI includes a model selector + built-in resumable downloader.
+
+Models available for download:
+
+| Model | Size |
+|-------|------|
+| **GLM-5.2 int4 + int8 MTP** (recommended) | ~370 GB |
+| GLM-5.2 FP8 Uncensored Int4 | ~384 GB |
+| Laguna-S-2.1 int4 | ~63 GB |
+| Hy3 int4 | ~145 GB |
+
+The model list is stored in `scripts/model_list.json`. To add your own model, just append a line:
+
+```json
+{"name": "Model Name", "repo": "org/repo-name", "size_gb": 100}
+```
 
 **Model-agnostic engine** — the tiering/staging algorithm works with any MoE model. GLM-5.2 and OLMoE supported today; Kimi K2, Qwen3 MoE, MiniMax on the roadmap.
 

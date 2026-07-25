@@ -102,8 +102,33 @@ def build_env(model_path: str = "") -> dict:
     return env
 
 
-MODEL_REPO = "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
-MODEL_SIZE_GB = 370
+_model_list_cache = None
+
+
+def load_model_list() -> list:
+    global _model_list_cache
+    if _model_list_cache is not None:
+        return _model_list_cache
+    import json
+    path = repo_root() / "scripts" / "model_list.json"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        _model_list_cache = [(m["name"], m["repo"], m["size_gb"]) for m in data]
+        return _model_list_cache
+    except Exception:
+        _model_list_cache = [
+            ("GLM-5.2 int4 + int8 MTP (recommended)", "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp", 370),
+        ]
+        return _model_list_cache
+
+
+MODEL_REPO = load_model_list()[0][1] if load_model_list() else "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
+MODEL_SIZE_GB = load_model_list()[0][2] if load_model_list() else 370
+
+
+def get_model_by_index(idx: int = 0) -> tuple:
+    return load_model_list()[idx]
 
 
 def find_downloader() -> Path | None:
@@ -132,6 +157,7 @@ def check_repo_alive(repo: str = MODEL_REPO) -> bool:
 
 
 def start_model_download(dest_dir: str, repo: str = MODEL_REPO,
+                         model_name: str = "", model_size: int = 0,
                          status_cb=None) -> int:
     emit = status_cb or (lambda m: print(f"STATUS: {m}", flush=True))
     downloader = find_downloader()
@@ -143,7 +169,9 @@ def start_model_download(dest_dir: str, repo: str = MODEL_REPO,
 
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-    emit(f"Downloading {repo} → {dest_dir} (~{MODEL_SIZE_GB} GB)")
+    label = f"{model_name} ({repo})" if model_name else repo
+    sz = f"~{model_size}" if model_size else f"~{MODEL_SIZE_GB}"
+    emit(f"Downloading {label} → {dest_dir} ({sz} GB)")
     emit(f"Resumable: re-run to continue if interrupted")
     try:
         proc = subprocess.Popen(

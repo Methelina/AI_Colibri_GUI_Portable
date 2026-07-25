@@ -361,9 +361,21 @@ def act_dl_button():
         try: p.mkdir(parents=True, exist_ok=True)
         except: ct("GUI", "! Cannot create folder"); return
 
-    ct("GUI", f">>> Downloading model to {dest} (~{cc.MODEL_SIZE_GB} GB, resumable)...")
+    idx = 0
+    models = cc.load_model_list()
+    if dpg.does_item_exist("dl_model_combo"):
+        name = dpg.get_value("dl_model_combo")
+        for i, m in enumerate(models):
+            if m[0] == name:
+                idx = i
+                break
+    model_name, repo_id, model_size = models[idx]
+
+    ct("GUI", f">>> Downloading {model_name} to {dest} (~{model_size} GB, resumable)...")
     def w():
-        cc.start_model_download(dest, status_cb=lambda m: ct("GUI", f"DL: {m}"))
+        cc.start_model_download(dest, repo=repo_id, model_name=model_name,
+                                model_size=model_size,
+                                status_cb=lambda m: ct("GUI", f"DL: {m}"))
         os.environ["COLI_MODEL"] = dest
         os.environ["SNAP"] = dest
         _presets["_last"] = {"COLI_MODEL": dest, "SNAP": dest}
@@ -384,6 +396,16 @@ def _refresh_dl_ui():
     show_dl = bool(folder) and Path(folder).is_dir() and not folder_has_model
     if dpg.does_item_exist("dl_section"):
         dpg.configure_item("dl_section", show=show_dl)
+
+    # Update model detail info from combo selection
+    if show_dl and dpg.does_item_exist("dl_model_combo") and dpg.does_item_exist("dl_model_detail"):
+        name = dpg.get_value("dl_model_combo")
+        detail = ""
+        for m in cc.load_model_list():
+            if m[0] == name:
+                detail = f"{m[1]}  |  ~{m[2]} GB  |  resumable"
+                break
+        dpg.set_value("dl_model_detail", detail)
 
 
 def act_preset_save():
@@ -544,13 +566,14 @@ def build_gui():
             repo_status = "HF repo reachable" if repo_alive else "HF repo UNREACHABLE (check internet)"
             repo_color = (80, 210, 100) if repo_alive else (230, 70, 70)
             dpg.add_text(repo_status, tag="dl_repo_status", color=repo_color)
-            dpg.add_text("Repo: mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp", tag="dl_repo",
-                         color=(140, 145, 155), indent=4)
-            dpg.add_text("Size: ~370 GB — resumable download", tag="dl_size",
-                         color=(140, 145, 155), indent=4)
-            with dpg.group(horizontal=True):
-                dpg.add_button(label="Download Model (~370 GB)", tag="dl_download_btn",
-                               callback=act_dl_button)
+            model_names = [m[0] for m in cc.load_model_list()]
+            dpg.add_combo(model_names, tag="dl_model_combo", default_value=model_names[0],
+                          width=-1)
+            with dpg.tooltip("dl_model_combo"):
+                dpg.add_text("Choose which model to download")
+            dpg.add_text("", tag="dl_model_detail", color=(140, 145, 155), indent=4)
+            dpg.add_button(label="Download", tag="dl_download_btn",
+                           callback=act_dl_button)
             with dpg.tooltip("dl_download_btn"):
                 dpg.add_text("Start resumable download via pycurl + HF API")
                 dpg.add_text("Safe to interrupt — re-run to continue from where it stopped")

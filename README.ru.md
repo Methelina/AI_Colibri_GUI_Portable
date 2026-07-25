@@ -186,9 +186,25 @@ CUDA GPU ☑  CUDA Dense ☑  MTP ☑  Pipe I/O ☑  O_DIRECT ☑  KV Save ☑
 | Python | 3.12 (ставится авто) | — |
 | Node.js | Для Web UI | 18+ |
 
-## Модель
+## Модели
 
-Рекомендованная модель: [GLM-5.2 int4 + int8 MTP](https://huggingface.co/mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp) (~370 GB). В GUI встроен загрузчик с докачкой через pycurl.
+В GUI встроен загрузчик с выбором модели из списка (докачка через pycurl).
+
+Модели доступные для скачивания:
+
+| Модель | Размер |
+|--------|--------|
+| **GLM-5.2 int4 + int8 MTP** (рекомендованная) | ~370 GB |
+| GLM-5.2 FP8 Uncensored Int4 | ~384 GB |
+| Laguna-S-2.1 int4 | ~63 GB |
+| Hy3 int4 | ~145 GB |
+
+Список моделей хранится в файле `scripts/model_list.json`. Чтобы добавить свою модель, просто
+допиши строку:
+
+```json
+{"name": "Название модели", "repo": "org/repo-name", "size_gb": 100}
+```
 
 **Движок model-agnostic** — технология tiering/staging работает с любыми MoE-моделями. Сегодня поддерживаются GLM-5.2 и OLMoE, на подходе Kimi K2, Qwen3 MoE, MiniMax.
 
