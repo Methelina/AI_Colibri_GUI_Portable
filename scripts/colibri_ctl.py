@@ -86,6 +86,8 @@ def is_model_dir(path: str) -> bool:
     has_safetensors = any(p.rglob("*.safetensors"))
     has_config = (p / "config.json").is_file()
     return has_safetensors or has_config
+
+MODEL_REPO = "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
 MODEL_SIZE_GB = 370
 
 

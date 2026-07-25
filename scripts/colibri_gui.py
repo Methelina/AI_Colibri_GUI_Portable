@@ -19,7 +19,7 @@ import dearpygui.dearpygui as dpg
 SC = "status_circle";  ST = "status_text"
 SSC = "serve_circle";  SST = "serve_text";  SPT = "serve_port_text"
 WSC = "web_circle";  WST = "web_text";  WPT = "web_port_text"
-MC = "model_path_text"; ET = "engine_path_text"
+ET = "engine_path_text"
 VT = "vram_text";      RT = "ram_text"
 LG = "log_area";       CK = "autoscroll_cb"
 SH = "sect_engine";    DH = "sect_serve"
@@ -138,12 +138,11 @@ def apply_ui():
         dpg.configure_item("btn_start_web", enabled=(wl != "RUNNING"))
         dpg.configure_item("btn_open_web", enabled=(wl == "RUNNING"))
 
-    model = cc.find_model_path() or "(not set)"
-    if dpg.does_item_exist(MC): dpg.set_value(MC, model)
-
-    has_model = bool(cc.find_model_path())
-    if dpg.does_item_exist("dl_section"):
-        dpg.configure_item("dl_section", show=not has_model)
+    model = cc.find_model_path() or ""
+    if dpg.does_item_exist("dl_folder_input") and model:
+        current = dpg.get_value("dl_folder_input").strip()
+        if current != model:
+            dpg.set_value("dl_folder_input", model)
 
     if dpg.does_item_exist(VT): dpg.set_value(VT, cc.vram_snapshot())
     if dpg.does_item_exist(RT): dpg.set_value(RT, cc.ram_snapshot())
@@ -311,8 +310,21 @@ def act_log_folder():
     except: pass
 
 
-def act_dl_button():
-    """Smart button: Set Folder → then becomes Download if folder empty."""
+def act_browse_folder():
+    """Open tkinter folder picker dialog."""
+    try:
+        from tkinter import Tk, filedialog
+        root = Tk(); root.withdraw(); root.attributes('-topmost', True)
+        path = filedialog.askdirectory(title="Select model folder")
+        root.destroy()
+        if path:
+            dpg.set_value("dl_folder_input", path)
+    except Exception as e:
+        ct("GUI", f"! Folder dialog error: {e}")
+
+
+def act_set_folder():
+    """Save folder path. If no model files, offer download."""
     dest = dpg.get_value("dl_folder_input").strip()
     if not dest:
         ct("GUI", "! Enter a folder path first")
@@ -322,38 +334,52 @@ def act_dl_button():
         try: p.mkdir(parents=True, exist_ok=True)
         except: ct("GUI", "! Cannot create folder"); return
 
-    if cc.is_model_dir(dest):
-        # Folder has model files — use it
-        os.environ["COLI_MODEL"] = dest
-        os.environ["SNAP"] = dest
-        ct("GUI", f"+ Model folder set: {dest}")
-        return
+    os.environ["COLI_MODEL"] = dest
+    os.environ["SNAP"] = dest
+    ct("GUI", f"+ Model folder set: {dest}")
 
-    # Folder exists but no model — download
+    # Auto-save to presets for next launch
+    _presets["_last"] = {"COLI_MODEL": dest, "SNAP": dest}
+    save_presets_to_disk()
+
+    if not cc.is_model_dir(dest):
+        ct("GUI", "* No model files found — use Download button below")
+
+
+def act_dl_button():
+    """Start model download to the folder set in the input field."""
+    dest = dpg.get_value("dl_folder_input").strip()
+    if not dest:
+        ct("GUI", "! Enter a folder path first")
+        return
+    p = Path(dest)
+    if not p.is_dir():
+        try: p.mkdir(parents=True, exist_ok=True)
+        except: ct("GUI", "! Cannot create folder"); return
+
     ct("GUI", f">>> Downloading model to {dest} (~{cc.MODEL_SIZE_GB} GB, resumable)...")
     def w():
         cc.start_model_download(dest, status_cb=lambda m: ct("GUI", f"DL: {m}"))
         os.environ["COLI_MODEL"] = dest
         os.environ["SNAP"] = dest
+        _presets["_last"] = {"COLI_MODEL": dest, "SNAP": dest}
+        save_presets_to_disk()
     threading.Thread(target=w, daemon=True).start()
 
 
 def _refresh_dl_ui():
-    """Called by monitor thread: update download button label based on folder state."""
+    """Called by monitor thread: model circle + download section visibility."""
     if not dpg.does_item_exist("dl_folder_input"): return
     folder = dpg.get_value("dl_folder_input").strip()
-    has_model = bool(cc.find_model_path())
+    folder_has_model = cc.is_model_dir(folder)
 
+    if dpg.does_item_exist("model_circle"):
+        color = (80, 210, 100) if folder_has_model else (110, 110, 110)
+        dpg.configure_item("model_circle", fill=color)
+
+    show_dl = bool(folder) and Path(folder).is_dir() and not folder_has_model
     if dpg.does_item_exist("dl_section"):
-        dpg.configure_item("dl_section", show=not has_model)
-
-    if not has_model and dpg.does_item_exist("dl_btn"):
-        if cc.is_model_dir(folder):
-            dpg.set_item_label("dl_btn", "Use This Folder")
-        elif folder and Path(folder).is_dir():
-            dpg.set_item_label("dl_btn", "Download Model")
-        else:
-            dpg.set_item_label("dl_btn", "Set Folder")
+        dpg.configure_item("dl_section", show=show_dl)
 
 
 def act_preset_save():
@@ -463,7 +489,12 @@ def build_gui():
         # ── Header ──
         with dpg.group(horizontal=True):
             dpg.add_text("colibri v1.1", tag="ver_text", color=(255, 200, 100))
-            dpg.add_text("  |  GLM-5.2 · MoE Streaming", color=(140, 145, 155))
+            dpg.add_text("  |  by Soror L.'. L.'.", color=(140, 145, 155))
+            dpg.add_button(label="github.com/Methelina", tag="btn_github", small=True,
+                           callback=lambda: webbrowser.open(
+                               "https://github.com/Methelina/AI_Colibri_GUI_Portable"))
+            with dpg.tooltip("btn_github"):
+                dpg.add_text("Open this project on GitHub")
             dpg.add_text("    ")
             dpg.add_text("GPU", tag=GL, color=(255, 200, 100))
             dpg.add_text("<0%> VRAM: 0/0Gb", tag=VT, color=(180, 185, 195))
@@ -481,15 +512,30 @@ def build_gui():
             dpg.add_text("  ")
             dpg.add_text("CHECKING", tag=ST, color=(110, 110, 110))
         dpg.add_text("", tag=ET, color=(160, 165, 175), indent=24)
-        dpg.add_text("model:", tag=MC, color=(160, 165, 175), indent=24)
+        # ── Model path (always visible) ──
+        with dpg.group(horizontal=True, indent=24):
+            with dpg.drawlist(width=14, height=14):
+                dpg.draw_circle(center=(7, 7), radius=5, tag="model_circle", fill=(110, 110, 110))
+            dpg.add_input_text(tag="dl_folder_input", width=-90,
+                               default_value=cc.find_model_path() or cc.default_model_dir(),
+                               hint="model folder path")
+            dpg.add_button(label="+", width=24, callback=act_browse_folder)
+            with dpg.tooltip(dpg.last_item()):
+                dpg.add_text("Open folder browser to pick model directory")
+            dpg.add_button(label="Set", tag="dl_btn", callback=act_set_folder)
+        with dpg.tooltip("dl_folder_input"):
+            dpg.add_text("Path to GLM-5.2 int4 model folder (.safetensors files)")
+        with dpg.tooltip("dl_btn"):
+            dpg.add_text("Set this path as the model directory")
+
         if not cc.engine_has_cuda():
             dpg.add_text("GPU: CPU-ONLY — rebuild: .\\build_cuda.ps1", tag="cuda_warn",
                          color=(240, 180, 60), indent=24)
         dpg.add_spacer(height=2)
 
-        # ── Model download (visible only when model not found) ──
+        # ── Model download (visible only when model folder is empty) ──
         with dpg.group(tag="dl_section", show=False):
-            dpg.add_text("Model path not set", tag="dl_title", color=(255, 160, 60))
+            dpg.add_text("No model files found in this folder", tag="dl_title", color=(255, 160, 60))
             repo_alive = cc.check_repo_alive()
             repo_status = "HF repo reachable" if repo_alive else "HF repo UNREACHABLE (check internet)"
             repo_color = (80, 210, 100) if repo_alive else (230, 70, 70)
@@ -499,12 +545,11 @@ def build_gui():
             dpg.add_text("Size: ~370 GB — resumable download", tag="dl_size",
                          color=(140, 145, 155), indent=4)
             with dpg.group(horizontal=True):
-                dpg.add_input_text(tag="dl_folder_input", width=-120,
-                                   default_value=cc.default_model_dir(), hint="model folder path")
-                dpg.add_button(label="Set Folder", tag="dl_btn", callback=act_dl_button)
-            with dpg.tooltip("dl_btn"):
-                dpg.add_text("Set folder = save path, then download if empty")
-                dpg.add_text("Download = start resumable HF download (~370 GB)")
+                dpg.add_button(label="Download Model (~370 GB)", tag="dl_download_btn",
+                               callback=act_dl_button)
+            with dpg.tooltip("dl_download_btn"):
+                dpg.add_text("Start resumable download via pycurl + HF API")
+                dpg.add_text("Safe to interrupt — re-run to continue from where it stopped")
             dpg.add_spacer(height=4)
 
         with dpg.group(indent=24):
@@ -619,7 +664,7 @@ def build_gui():
         dpg.add_checkbox(label="Auto-scroll", tag=CK, default_value=True)
         dpg.add_input_text(tag=LG, multiline=True, readonly=True, width=-1, height=-1, tracked=True)
 
-    dpg.create_viewport(title="colibri — GLM-5.2 Control", width=720, height=700)
+    dpg.create_viewport(title="colibri — GLM-5.2 Control", width=720, height=850, min_width=640, min_height=600)
     if fonts_ok:
         for t in (SH, DH, "sect_web", "ver_text"): dpg.bind_item_font(t, "font_caps")
     dpg.setup_dearpygui(); dpg.show_viewport(); dpg.set_primary_window("main_window", True)
@@ -661,10 +706,18 @@ def _run():
     ct("GUI", "colibri GUI starting...")
     ct("GUI", f"Repo root: {cc.repo_root()}")
     ct("GUI", f"Engine: {cc.find_engine() or 'NOT FOUND'}")
-    ct("GUI", f"Model: {cc.find_model_path() or 'NOT SET'}")
 
     load_presets()
     _sync_env_toggles()
+
+    # Restore last saved model path
+    if "_last" in _presets and not os.environ.get("COLI_MODEL"):
+        last = _presets["_last"]
+        for k in ("COLI_MODEL", "SNAP"):
+            if k in last:
+                os.environ[k] = last[k]
+
+    ct("GUI", f"Model: {cc.find_model_path() or 'NOT SET'}")
 
     try: cc.log_path().write_text("", encoding="utf-8")
     except: pass
