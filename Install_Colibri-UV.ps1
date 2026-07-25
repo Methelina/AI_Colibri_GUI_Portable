@@ -30,14 +30,19 @@ $Host.UI.RawUI.WindowTitle = "colibri Portable Installer"
 # ==========================================================
 # ASCII Art
 # ==========================================================
-Write-Host " ===========================================" -ForegroundColor Cyan
-Write-Host "    _____      _ _ _     _      _  " -ForegroundColor Yellow
-Write-Host "   / ____|    | (_) |   (_)    (_) " -ForegroundColor Yellow
-Write-Host "  | |     ___ | |_| |__  _ _ __ _  " -ForegroundColor Yellow
-Write-Host "  | |    / _ \| | | '_ \| | '__| | " -ForegroundColor Yellow
-Write-Host "  | |___| (_) | | | |_) | | |  | | " -ForegroundColor Yellow
-Write-Host "   \_____\___/|_|_|_.__/|_|_|  |_| " -ForegroundColor Yellow
-Write-Host " ===========================================" -ForegroundColor Cyan
+Write-Host " ===========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  ██▓        ██▓    ██▓        ██▓           " -ForegroundColor Yellow
+Write-Host " ▓██▒              ▓██▒                      " -ForegroundColor Yellow
+Write-Host " ▒██░              ▒██░                      " -ForegroundColor Yellow
+Write-Host " ▒██░              ▒██░                      " -ForegroundColor Yellow
+Write-Host " ░██████▒ ██▓  ██▓ ░██████▒ ██▓  ██▓       " -ForegroundColor Yellow
+Write-Host " ░ ▒░▓  ░ ▒▓▒  ▒▓▒ ░ ▒░▓  ░ ▒▓▒  ▒▓▒       " -ForegroundColor Yellow
+Write-Host " ░ ░ ▒  ░ ░▒   ░▒  ░ ░ ▒  ░ ░▒   ░▒        " -ForegroundColor Yellow
+Write-Host "   ░ ░    ░    ░     ░ ░    ░    ░          " -ForegroundColor Yellow
+Write-Host "     ░  ░  ░    ░      ░  ░  ░    ░        " -ForegroundColor Yellow
+Write-Host ""
+Write-Host " ===========================================" -ForegroundColor Green
 Write-Host "   colibri GLM-5.2 MoE Streaming Engine" -ForegroundColor Green
 Write-Host "   GUI Control Panel - Portable Installer" -ForegroundColor Cyan
 Write-Host " ===========================================" -ForegroundColor Cyan
