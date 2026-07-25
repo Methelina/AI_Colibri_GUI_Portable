@@ -53,8 +53,11 @@ The script **auto-detects** CUDA (PATH, CUDA_PATH, Program Files), MinGW gcc (PA
 ### 4. Run
 
 1. Set toggles (see recommendations below)
-2. **Start Serve** → API on port 8000
-3. **Start Web UI** → web chat on port 5173
+2. **Start Serve** → API on port 8000 (wait for READY status)
+3. **Start Web UI** → web chat on port 5173:
+
+![Web Chat UI](bin/res/Pintura_002.png)
+
 4. In the web UI, press **Probe server**
 
 Or click **Chat** for a console chat window.
