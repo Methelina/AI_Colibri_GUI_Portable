@@ -40,11 +40,31 @@
 - Python 3.12 в изолированную папку `colibri_env`
 - DearPyGui, psutil, pycurl
 
-Если есть видеокарта NVIDIA — после установки запусти сборку CUDA:
+### Сборка с поддержкой NVIDIA GPU (опционально)
+
+Если есть видеокарта NVIDIA — собери CUDA-версию движка:
 
 ```powershell
 .\build_cuda.ps1
 ```
+
+**Что делает скрипт:**
+1. Ищет **CUDA Toolkit** (nvcc) — в `PATH`, в `CUDA_PATH`, в `Program Files\NVIDIA`
+2. Ищет **MinGW gcc** — в `PATH`, в `C:\msys64\`, `C:\mingw64\`
+3. Ищет **MSVC Build Tools** (vcvars64.bat) — VS2022 Community/Pro/BuildTools
+4. Определяет архитектуру GPU через `nvidia-smi` (RTX 3060 → sm_86, RTX 4090 → sm_89 и т.д.)
+5. Собирает `coli_cuda.dll` (nvcc + cl.exe) и `colibri.exe` (gcc + CUDA-загрузчик)
+
+**Если инструмент не найден** — скрипт предложит ввести путь вручную с подсказкой где скачать.
+
+**Если найдено несколько версий** (например CUDA 12.6 и 12.8) — скрипт попросит выбрать цифрой `[0] [1]`.
+
+**Требования для сборки:**
+- **CUDA Toolkit** (≥12.0): [developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+- **MinGW gcc**: `scoop install mingw-winlibs` или MSYS2 → `pacman -S mingw-w64-ucrt-x86_64-gcc`
+- **MSVC Build Tools**: `winget install Microsoft.VisualStudio.2022.BuildTools` — выбрать workload «Desktop development with C++»
+
+После успешной сборки в GUI включи тоглы **CUDA GPU** и **CUDA Dense**.
 
 ### Шаг 2. Запуск GUI
 

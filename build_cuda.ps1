@@ -1,43 +1,167 @@
-# build_cuda.ps1 — colibri CUDA build for RTX 3060 (sm_86)
+# build_cuda.ps1 — colibri CUDA build (universal, interactive)
 # Author:  Soror L.'. L.'.
-# Direct nvcc + gcc, no Makefile needed
+# Auto-detects CUDA, gcc, MSVC, GPU arch. Asks user when ambiguous or missing.
 
-$ErrorActionPreference = "Stop"
-
-$CUDA_HOME = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
-$NVCC      = "$CUDA_HOME\bin\nvcc.exe"
-$GCC       = "O:\Work\Coding\QT\Tools\mingw1310_64\bin\gcc.exe"
-$VCVARS    = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-$SRC_DIR   = Join-Path $PSScriptRoot "src\colibri\c"
-$OUT_DIR   = $PSScriptRoot
-$CUDA_ARCH = "sm_86"
+$ErrorActionPreference = "Continue"
 
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host " colibri CUDA Build" -ForegroundColor Cyan
-Write-Host " CUDA:  $CUDA_HOME" -ForegroundColor White
-Write-Host " Arch:  $CUDA_ARCH (RTX 3060 Ampere)" -ForegroundColor White
-Write-Host " gcc:   $GCC" -ForegroundColor White
-Write-Host " Src:   $SRC_DIR" -ForegroundColor White
-Write-Host " Out:   $OUT_DIR" -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host " Prerequisites:" -ForegroundColor White
+Write-Host "   - CUDA Toolkit (nvcc)" -ForegroundColor DarkGray
+Write-Host "   - MinGW-w64 gcc + make" -ForegroundColor DarkGray
+Write-Host "   - MSVC Build Tools (vcvars64.bat + cl.exe)" -ForegroundColor DarkGray
+Write-Host ""
+
+# ── Helpers ──
+function Pick-One {
+    param([string]$What, [string[]]$Items, [string]$Hint)
+    if ($Items.Count -eq 0) {
+        Write-Host "  $What not found." -ForegroundColor Red
+        Write-Host "  $Hint" -ForegroundColor Yellow
+        $manual = Read-Host "  Enter path manually (or Enter to abort)"
+        if ($manual -and (Test-Path $manual)) { return @($manual) }
+        return @()
+    }
+    if ($Items.Count -eq 1) {
+        Write-Host "  $What : $($Items[0])" -ForegroundColor Green
+        return $Items
+    }
+    Write-Host "  Multiple $What found:" -ForegroundColor Yellow
+    for ($i = 0; $i -lt $Items.Count; $i++) {
+        Write-Host "    [$i] $($Items[$i])"
+    }
+    $choice = Read-Host "  Pick number (or Enter for [0])"
+    if ($choice -eq "") { $choice = 0 }
+    $idx = [int]$choice
+    if ($idx -ge 0 -and $idx -lt $Items.Count) {
+        return @($Items[$idx])
+    }
+    return @()
+}
+
+function Find-InStandardDirs {
+    param([string[]]$Dirs, [string]$File)
+    $found = @()
+    foreach ($d in $Dirs) {
+        if ($d -and (Test-Path (Join-Path $d $File))) {
+            $found += Join-Path $d $File
+        }
+    }
+    return $found
+}
+
+# ── 1. CUDA ──
+$cudaCandidates = @()
+# Check PATH first
+if (Get-Command nvcc -ErrorAction SilentlyContinue) {
+    $nvccPath = (Get-Command nvcc).Source
+    $cudaHomeFromPath = Split-Path -Parent (Split-Path -Parent $nvccPath)
+    if ($cudaHomeFromPath -and (Test-Path $cudaHomeFromPath)) {
+        $cudaCandidates += $cudaHomeFromPath
+    }
+}
+# Check standard install dirs
+$cudaBase = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA"
+if (Test-Path $cudaBase) {
+    $cudaCandidates += @(Get-ChildItem $cudaBase -Directory |
+        Where-Object { $_.Name -match '^v\d' } |
+        Sort-Object Name -Descending |
+        ForEach-Object { $_.FullName })
+}
+if ($env:CUDA_PATH -and (Test-Path $env:CUDA_PATH)) {
+    $cudaCandidates = @($env:CUDA_PATH) + $cudaCandidates | Select-Object -Unique
+}
+$cudaCandidates = @($cudaCandidates | Select-Object -Unique)
+$selected = Pick-One "CUDA Toolkit" $cudaCandidates "Install from: https://developer.nvidia.com/cuda-downloads"
+if (-not $selected) { Write-Host "ABORTED: CUDA required." -ForegroundColor Red; exit 1 }
+$CUDA_HOME = $selected[0]
+$NVCC = Join-Path $CUDA_HOME "bin\nvcc.exe"
+
+# ── 2. gcc (MinGW) ──
+$gccDirs = @()
+if (Get-Command gcc -ErrorAction SilentlyContinue) {
+    $gccDirs += (Get-Command gcc).Source
+}
+$gccStdDirs = @(
+    "C:\msys64\ucrt64\bin",
+    "C:\msys64\mingw64\bin",
+    "C:\mingw64\bin",
+    "C:\MinGW\bin"
+)
+$gccDirs += Find-InStandardDirs $gccStdDirs "gcc.exe"
+$gccDirs = @($gccDirs | Select-Object -Unique)
+$selected = Pick-One "gcc (MinGW)" $gccDirs "Install: MSYS2 → pacman -S mingw-w64-ucrt-x86_64-gcc make     OR     scoop install mingw-winlibs"
+if (-not $selected) { Write-Host "ABORTED: gcc required." -ForegroundColor Red; exit 1 }
+$GCC = $selected[0]
+
+# ── 3. MSVC (vcvars64.bat) ──
+$vsDirs = @()
+$vsStdDirs = @(
+    "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build",
+    "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build",
+    "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build"
+)
+$vsDirs += Find-InStandardDirs $vsStdDirs "vcvars64.bat"
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswhere) {
+    $vsPaths = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+    if ($vsPaths) {
+        foreach ($p in @($vsPaths)) {
+            $c = Join-Path $p "VC\Auxiliary\Build\vcvars64.bat"
+            if (Test-Path $c) { $vsDirs += $c }
+        }
+    }
+}
+$vsDirs = @($vsDirs | Select-Object -Unique)
+$selected = Pick-One "MSVC (vcvars64.bat)" $vsDirs "Install: winget install Microsoft.VisualStudio.2022.BuildTools     (select 'Desktop development with C++' workload)"
+if (-not $selected) { Write-Host "ABORTED: MSVC required." -ForegroundColor Red; exit 1 }
+$VCVARS = $selected[0]
+
+# ── 4. GPU architecture ──
+$CUDA_ARCH = $null
+try {
+    $smi = & nvidia-smi --query-gpu=name --format=csv,noheader 2>$null | Select-Object -First 1
+    if ($smi) {
+        $smi = $smi.Trim()
+        if    ($smi -match "RTX 50|Blackwell")    { $CUDA_ARCH = "sm_120" }
+        elseif ($smi -match "RTX 4090|RTX 4080|RTX 4070|RTX 4060|Ada") { $CUDA_ARCH = "sm_89" }
+        elseif ($smi -match "RTX 3090|RTX 3080|RTX 3070|RTX 3060|Ampere|A\d000|A100") { $CUDA_ARCH = "sm_86" }
+        elseif ($smi -match "RTX 20|Turing|T4|Quadro RTX") { $CUDA_ARCH = "sm_75" }
+        elseif ($smi -match "GTX 16|GTX 10|Pascal|P\d000|P100") { $CUDA_ARCH = "sm_61" }
+        if ($CUDA_ARCH) {
+            Write-Host "  GPU   : $smi → $CUDA_ARCH" -ForegroundColor Green
+        }
+    }
+} catch {}
+if (-not $CUDA_ARCH) {
+    $CUDA_ARCH = Read-Host "  Enter CUDA arch (e.g. sm_86 for RTX 3060) [native]"
+    if (-not $CUDA_ARCH) { $CUDA_ARCH = "native" }
+}
+
+# ── 5. Build ──
+$SRC_DIR = Join-Path $PSScriptRoot "src\colibri\c"
+$OUT_DIR = $PSScriptRoot
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host " Build config" -ForegroundColor Cyan
+Write-Host "  CUDA:  $CUDA_HOME" -ForegroundColor White
+Write-Host "  Arch:  $CUDA_ARCH" -ForegroundColor White
+Write-Host "  gcc:   $GCC" -ForegroundColor White
+Write-Host "  MSVC:  $VCVARS" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor Cyan
 
-if (-not (Test-Path $NVCC))  { Write-Host "ERROR: nvcc not found at $NVCC" -ForegroundColor Red; exit 1 }
-if (-not (Test-Path $GCC))   { Write-Host "ERROR: gcc not found at $GCC"  -ForegroundColor Red; exit 1 }
-if (-not (Test-Path $VCVARS)) { Write-Host "ERROR: vcvars64.bat not found at $VCVARS" -ForegroundColor Red; exit 1 }
-if (-not (Test-Path $SRC_DIR)) { Write-Host "ERROR: src dir not found at $SRC_DIR" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $SRC_DIR)) { Write-Host "ERROR: src\colibri\c not found" -ForegroundColor Red; exit 1 }
 
-# Build a single cmd /c command that chains: vcvars -> set PATH -> nvcc
-# Everything runs in ONE cmd session so env vars persist.
-
-# CFLAGS for gcc
 $CFLAGS = "-D_FILE_OFFSET_BITS=64 -O3 -march=native -fopenmp -Wall -Wextra -Wno-unused-parameter -Wno-misleading-indentation -Wno-unused-function -DCOLI_CUDA"
 $LDFLAGS = "-lm -fopenmp -static -lpsapi"
 
 Push-Location $SRC_DIR
 try {
-    # === STEP 1: Build coli_cuda.dll ===
     Write-Host "`n[1/3] Building coli_cuda.dll (nvcc + MSVC)..." -ForegroundColor Yellow
-
     $cmds = @(
         '@echo off',
         "call `"$VCVARS`" >nul 2>&1",
@@ -47,48 +171,29 @@ try {
         'if errorlevel 1 echo NVCC_FAILED & exit /b 1',
         'echo NVCC_OK'
     )
-    $batContent = $cmds -join "`r`n"
     $tmpBat = Join-Path $PSScriptRoot "_build_cuda_tmp.bat"
-    [System.IO.File]::WriteAllText($tmpBat, $batContent, [System.Text.Encoding]::ASCII)
-
+    [IO.File]::WriteAllText($tmpBat, ($cmds -join "`r`n"), [Text.Encoding]::ASCII)
     $result = cmd /c "`"$tmpBat`" 2>&1"
     Remove-Item $tmpBat -Force -ErrorAction SilentlyContinue
+    if ($result -match "VCVARS_FAILED") { throw "vcvars64.bat failed" }
+    if ($result -match "NVCC_FAILED") { throw "nvcc failed" }
+    Write-Host "       OK" -ForegroundColor Green
 
-    if ($result -match "VCVARS_FAILED" -or $LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: vcvars64.bat failed" -ForegroundColor Red
-        Write-Host $result
-        Pop-Location; exit 1
-    }
-    if ($result -match "NVCC_FAILED") {
-        Write-Host "ERROR: nvcc failed" -ForegroundColor Red
-        Write-Host $result
-        Pop-Location; exit 1
-    }
-    Write-Host "       coli_cuda.dll OK" -ForegroundColor Green
-
-    # === STEP 2: Build backend_loader.o ===
     Write-Host "`n[2/3] Building backend_loader.o (gcc)..." -ForegroundColor Yellow
-    $gccArgs = $CFLAGS.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries) + @("-c", "backend_loader.c", "-o", "backend_loader.o")
-    & $GCC $gccArgs
+    & $GCC ($CFLAGS.Split(" ") + @("-c", "backend_loader.c", "-o", "backend_loader.o"))
     if ($LASTEXITCODE -ne 0) { throw "gcc failed on backend_loader.o" }
-    Write-Host "       backend_loader.o OK" -ForegroundColor Green
+    Write-Host "       OK" -ForegroundColor Green
 
-    # === STEP 3: Link colibri.exe ===
     Write-Host "`n[3/3] Linking colibri.exe (gcc + CUDA loader)..." -ForegroundColor Yellow
-    $gccArgs = $CFLAGS.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries) + @("colibri.c", "backend_loader.o", "-o", "colibri.exe") + $LDFLAGS.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)
-    & $GCC $gccArgs
-    if ($LASTEXITCODE -ne 0) { throw "gcc failed on colibri.exe link" }
-    Write-Host "       colibri.exe OK" -ForegroundColor Green
+    & $GCC ($CFLAGS.Split(" ") + @("colibri.c", "backend_loader.o", "-o", "colibri.exe") + $LDFLAGS.Split(" "))
+    if ($LASTEXITCODE -ne 0) { throw "gcc failed on colibri.exe" }
+    Write-Host "       OK" -ForegroundColor Green
 
-    # === Copy to root ===
-    Copy-Item -LiteralPath "colibri.exe" -Destination (Join-Path $OUT_DIR "colibri.exe") -Force
-    Copy-Item -LiteralPath "coli_cuda.dll" -Destination (Join-Path $OUT_DIR "coli_cuda.dll") -Force
-
-} catch {
-    Write-Host "ERROR: $_" -ForegroundColor Red
-    Pop-Location; exit 1
+    Copy-Item -Path "colibri.exe" -Destination (Join-Path $OUT_DIR "colibri.exe") -Force
+    Copy-Item -Path "coli_cuda.dll" -Destination (Join-Path $OUT_DIR "coli_cuda.dll") -Force
+} finally {
+    Pop-Location
 }
-Pop-Location
 
 if ((Test-Path (Join-Path $OUT_DIR "colibri.exe")) -and (Test-Path (Join-Path $OUT_DIR "coli_cuda.dll"))) {
     Write-Host "`n============================================================" -ForegroundColor Green
@@ -98,7 +203,7 @@ if ((Test-Path (Join-Path $OUT_DIR "colibri.exe")) -and (Test-Path (Join-Path $O
     Write-Host "============================================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Run: .\Run_Colibri.ps1" -ForegroundColor White
-    Write-Host "  Toggles to enable: CUDA GPU, CUDA Dense" -ForegroundColor White
+    Write-Host "  Toggles: CUDA GPU ON, CUDA Dense ON" -ForegroundColor White
 } else {
     Write-Host "ERROR: Copy to root failed" -ForegroundColor Red
     exit 1

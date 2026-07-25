@@ -22,11 +22,20 @@ A portable GUI-enhanced distribution of [colibri](https://github.com/JustVugg/co
 
 Downloads the engine, Python 3.12, and all dependencies into an isolated environment.
 
-For NVIDIA GPU support:
+### CUDA build (optional, for NVIDIA GPUs)
 
 ```powershell
 .\build_cuda.ps1
 ```
+
+The script **auto-detects** CUDA (PATH, CUDA_PATH, Program Files), MinGW gcc (PATH, msys64, mingw64), and MSVC Build Tools (VS2022 standard paths + vswhere). GPU architecture is detected via `nvidia-smi` (RTX 3060 → sm_86, RTX 4090 → sm_89, etc.).
+
+**If a tool is missing** — asks for a manual path with install hints. **If multiple versions found** — lets you pick with `[0] [1] [2]`.
+
+**Prerequisites:**
+- [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) (≥12.0)
+- MinGW gcc: via MSYS2 or `scoop install mingw-winlibs`
+- [MSVC Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) with "Desktop development with C++" workload
 
 ### 2. Launch
 
