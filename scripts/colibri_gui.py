@@ -138,12 +138,6 @@ def apply_ui():
         dpg.configure_item("btn_start_web", enabled=(wl != "RUNNING"))
         dpg.configure_item("btn_open_web", enabled=(wl == "RUNNING"))
 
-    model = cc.find_model_path() or ""
-    if dpg.does_item_exist("dl_folder_input") and model:
-        current = dpg.get_value("dl_folder_input").strip()
-        if current != model:
-            dpg.set_value("dl_folder_input", model)
-
     if dpg.does_item_exist(VT): dpg.set_value(VT, cc.vram_snapshot())
     if dpg.does_item_exist(RT): dpg.set_value(RT, cc.ram_snapshot())
 
@@ -344,6 +338,8 @@ def act_set_folder():
 
     if not cc.is_model_dir(dest):
         ct("GUI", "* No model files found — use Download button below")
+
+    _refresh_dl_ui()
 
 
 def act_dl_button():
