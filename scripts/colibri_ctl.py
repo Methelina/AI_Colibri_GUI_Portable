@@ -77,10 +77,6 @@ def find_coli() -> Path | None:
 def find_model_path() -> str:
     env = os.environ.get("COLI_MODEL") or os.environ.get("SNAP") or ""
     if env and Path(env).is_dir(): return env
-    for guess in (r"D:\glm52_i4",
-                  r"E:\glm52_i4",
-                  str(repo_root() / "glm52_i4")):
-        if Path(guess).is_dir(): return guess
     return ""
 
 
@@ -96,11 +92,7 @@ def find_downloader() -> Path | None:
 
 
 def default_model_dir() -> str:
-    for g in (r"D:\glm52_i4",
-              r"E:\glm52_i4",
-              str(repo_root() / "glm52_i4")):
-        if Path(g).is_dir(): return g
-    return r"D:\glm52_i4"
+    return str(repo_root() / "glm52_i4")
 
 
 def check_repo_alive(repo: str = MODEL_REPO) -> bool:

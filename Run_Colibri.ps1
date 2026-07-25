@@ -111,22 +111,14 @@ if (-not (Test-Path $GuiScript)) {
     exit 1
 }
 
-# Set model path for the GUI session
-$modelPath = $env:COLI_MODEL
-if (-not $modelPath) {
-    $guesses = @(
-        "D:\glm52_i4",
-        "E:\glm52_i4",
-        (Join-Path $ScriptPath "glm52_i4")
-    )
-    foreach ($g in $guesses) {
-        if (Test-Path $g) {
-            $env:COLI_MODEL = $g
-            $env:SNAP = $g
-            Write-Status "Auto-detected model: $g" "INFO"
-            break
-        }
-    }
+# Set model path from environment if available
+if ($env:COLI_MODEL) {
+    Write-Status "Model: $env:COLI_MODEL" "INFO"
+} elseif ($env:SNAP) {
+    $env:COLI_MODEL = $env:SNAP
+    Write-Status "Model (via SNAP): $env:SNAP" "INFO"
+} else {
+    Write-Status "Model not set — use GUI to configure or download" "WARN"
 }
 
 Write-Status "Launching colibri GUI..." "SUCCESS"
