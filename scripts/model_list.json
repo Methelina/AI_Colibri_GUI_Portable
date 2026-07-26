@@ -1,6 +1,6 @@
 [
     {"name": "GLM-5.2 int4 + int8 MTP (recommended)", "repo": "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp", "size_gb": 370},
     {"name": "GLM-5.2 FP8 Uncensored Int4",           "repo": "annelo/GLM-5.2-FP8-Uncensored-Colibri-Int4", "size_gb": 384},
-    {"name": "Laguna-S-2.1 int4",                     "repo": "nbeerbower/Laguna-S-2.1-colibri-int4", "size_gb": 63},
-    {"name": "Hy3 int4",                              "repo": "UnderstandLing/Hy3-colibri-int4", "size_gb": 145}
+    {"name": "Laguna-S-2.1 int4",                     "repo": "nbeerbower/Laguna-S-2.1-colibri-int4", "size_gb": 63,  "wip": true},
+    {"name": "Hy3 int4",                              "repo": "UnderstandLing/Hy3-colibri-int4", "size_gb": 145, "wip": true}
 ]

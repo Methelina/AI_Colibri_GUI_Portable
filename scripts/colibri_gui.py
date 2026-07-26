@@ -397,15 +397,24 @@ def _refresh_dl_ui():
     if dpg.does_item_exist("dl_section"):
         dpg.configure_item("dl_section", show=show_dl)
 
-    # Update model detail info from combo selection
     if show_dl and dpg.does_item_exist("dl_model_combo") and dpg.does_item_exist("dl_model_detail"):
         name = dpg.get_value("dl_model_combo")
         detail = ""
+        is_wip = False
         for m in cc.load_model_list():
             if m[0] == name:
-                detail = f"{m[1]}  |  ~{m[2]} GB  |  resumable"
+                is_wip = m[3] if len(m) > 3 else False
+                detail = f"{m[1]}  |  ~{m[2]} GB"
+                if is_wip:
+                    detail += "  |  [WIP] engine support in progress"
+                else:
+                    detail += "  |  resumable"
                 break
         dpg.set_value("dl_model_detail", detail)
+        if dpg.does_item_exist("dl_download_btn"):
+            dpg.configure_item("dl_download_btn", show=not is_wip)
+        if dpg.does_item_exist("dl_wip_text"):
+            dpg.configure_item("dl_wip_text", show=is_wip)
 
 
 def act_preset_save():
@@ -572,6 +581,8 @@ def build_gui():
             with dpg.tooltip("dl_model_combo"):
                 dpg.add_text("Choose which model to download")
             dpg.add_text("", tag="dl_model_detail", color=(140, 145, 155), indent=4)
+            dpg.add_text("Engine support for this model is still in progress (WIP)", tag="dl_wip_text",
+                         color=(240, 180, 60), indent=4, show=False)
             dpg.add_button(label="Download", tag="dl_download_btn",
                            callback=act_dl_button)
             with dpg.tooltip("dl_download_btn"):

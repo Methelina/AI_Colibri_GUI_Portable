@@ -117,12 +117,14 @@ The GUI includes a model selector + built-in resumable downloader.
 
 Models available for download:
 
-| Model | Size |
-|-------|------|
-| **GLM-5.2 int4 + int8 MTP** (recommended) | ~370 GB |
-| GLM-5.2 FP8 Uncensored Int4 | ~384 GB |
-| Laguna-S-2.1 int4 | ~63 GB |
-| Hy3 int4 | ~145 GB |
+| Model | Size | Status |
+|-------|------|--------|
+| **GLM-5.2 int4 + int8 MTP** (recommended) | ~370 GB | ✅ |
+| GLM-5.2 FP8 Uncensored Int4 | ~384 GB | ✅ |
+| Laguna-S-2.1 int4 | ~63 GB | 🚧 WIP |
+| Hy3 int4 | ~145 GB | 🚧 WIP |
+
+> 🚧 WIP = engine port in progress. Laguna-S-2.1 and Hy3 require separate engines currently under development. GLM-5.2 models are ready.
 
 The model list is stored in `scripts/model_list.json`. To add your own model, just append a line:
 

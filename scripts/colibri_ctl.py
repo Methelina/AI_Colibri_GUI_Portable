@@ -114,11 +114,11 @@ def load_model_list() -> list:
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-        _model_list_cache = [(m["name"], m["repo"], m["size_gb"]) for m in data]
+        _model_list_cache = [(m["name"], m["repo"], m["size_gb"], m.get("wip", False)) for m in data]
         return _model_list_cache
     except Exception:
         _model_list_cache = [
-            ("GLM-5.2 int4 + int8 MTP (recommended)", "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp", 370),
+            ("GLM-5.2 int4 + int8 MTP (recommended)", "mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp", 370, False),
         ]
         return _model_list_cache
 
